@@ -1,0 +1,241 @@
+=============================================
+
+Work in Progress help File to track how we went about development
+
+
+How did i develop this, a step by step log...
+==================================================
+
+////////////
+Question no 1
+news=> select count(*) from log group by path order by count(*) desc;
+news=> select count(*) from log group by path order by count(*) desc Limit 3;
+
+count
+--------
+479121
+338647
+253801
+(3 rows)
+
+////////////////////////////////
+^
+news=> select count(*) from log group by path order by count(*) desc;
+news=> select count(*) from log group by path order by count(*) desc Limit 3;
+
+count
+--------
+479121
+338647
+253801
+(3 rows)
+///////////////////////////////
+^
+news=> select count(*) from log group by path order by count(*) desc;
+news=> select count(*) from log group by path order by count(*) desc Limit 3;
+
+count
+--------
+479121
+338647
+253801
+(3 rows)
+
+news=>
+news=> s
+////////////////////
+https://httpstatuses.com/200
+/////////////////////////
+news=> select path as path_cnt from log group by path order by path_cnt desc limit 3;
+            path_cnt
+--------------------------------
+news=> select path,count(*)  from log where status like '%200%' and path !='/' group by path  order by count(path) desc limit 4;
+            path             | count
+-----------------------------+--------
+ /article/candidate-is-jerk  | 338647
+ /article/bears-love-berries | 253801
+ /article/bad-things-gone    | 170098
+ /article/goats-eat-googles  |  84906
+(4 rows)
+ews=> \d articles;
+                                  Table "public.articles"
+ Column |           Type           |                       Modifiers
+--------+--------------------------+-------------------------------------------------------
+ author | integer                  | not null
+ title  | text                     | not null
+ slug   | text                     | not null
+ lead   | text                     |
+ body   | text                     |
+ time   | timestamp with time zone | default now()
+ id     | integer                  | not null default nextval('articles_id_seq'::regclass)
+Indexes:
+    "articles_pkey" PRIMARY KEY, btree (id)
+    "articles_slug_key" UNIQUE CONSTRAINT, btree (slug)
+Foreign-key constraints:
+    "articles_author_fkey" FOREIGN KEY (author) REFERENCES authors(id)
+
+news=> select author,title,slug from articles limit 3;
+ author |              title               |         slug
+--------+----------------------------------+----------------------
+      3 | Bad things gone, say good people | bad-things-gone
+      4 | Balloon goons doomed             | balloon-goons-doomed
+      1 | Bears love berries, alleges bear | bears-love-berries
+(3 rows)
+
+news=> select author,title,slug from articles where slug is 'candidate-is-jerk';
+ERROR:  syntax error at or near "'candidate-is-jerk'"
+LINE 1: ...ect author,title,slug from articles where slug is 'candidate...
+                                                             ^
+news=> select author,title,slug from articles where slug ='candidate-is-jerk';
+ author |              title               |       slug
+--------+----------------------------------+-------------------
+      2 | Candidate is jerk, alleges rival | candidate-is-jerk
+(1 row)
+
+news=>
+---------------------------------------------
+
+select author,title,slug from articles where slug in
+(concat ('%',select path  from log
+where status like '%200%' and path !='/'
+group by path  order by count(path) desc limit 4 ))
+----------------------------------------
+
+select author,title,slug from articles where slug in (select concat('%',path)  from log  where status like '%200%' and path !='/' group by path  order by count(path) desc limit 4 );
+
+
+
+select author,title,slug from articles where slug in
+(select concat('%',path,'%')  from log
+where status like '%200%' and
+path !='/' group by path
+order by count(path) desc limit 4 );
+ author | title | slug
+--------+-------+------
+(0 rows)
+
+news=> select author,title,slug from articles where slug in (select concat('%',path,'%')  from log  where status like '%200%' and path !='/' group by path  order by count(path) desc limit 4 );
+ author | title | slug
+--------+-------+------
+(0 rows)
+
+news=> select concat('%',path,'%')  from log
+news-> where status like '%200%' and
+news-> path !='/' group by path
+news-> order by count(path) desc limit 4;
+            concat
+-------------------------------
+ %/article/candidate-is-jerk%
+ %/article/bears-love-berries%
+ %/article/bad-things-gone%
+ %/article/goats-eat-googles%
+(4 rows)
+
+
+
+
+select title, count(*) as views from articles inner join
+log on concat('/article/', articles.slug) = log.path
+where log.status like '%200%' and log.path !='/'
+group by log.path, articles.title order by views desc limit 3
+
+
+----------
+create view valid_3_visitor_articles as
+select l.path, l.count(path), a.slug, a.author,slug
+from log l, articles a
+where l.status like '%200%' and l.path !='/'
+group by l.path, a.title order by count(path) desc limit 3
+
+------
+
+select l.path, l.ip,l.status, a.slug, a.author,a.title from log l , articles a
+where l.status like '%200%' and l.path !='/'
+and concat('/article/',a.slug) = l.path
+limit 3
+
+------
+
+create view valid_visitor_articles as
+select l.path, l.ip,l.status, a.slug, a.author,a.title from log l , articles a
+where l.status like '%200%' and l.path !='/'
+and concat('/article/',a.slug) = l.path
+
+================
+news=> create view valid_visitor_articles as
+news-> select l.path, l.ip,l.status, a.slug, a.author,a.title from log l , articles a
+news-> where l.status like '%200%' and l.path !='/'
+news-> and concat('/article/',a.slug) = l.path ;
+CREATE VIEW
+news=> \d valid_visitor_articles ;
+View "public.valid_visitor_articles"
+ Column |  Type   | Modifiers
+--------+---------+-----------
+ path   | text    |
+ ip     | inet    |
+ status | text    |
+ slug   | text    |
+ author | integer |
+ title  | text    |
+
+\d: extra argument ";" ignored
+news=>
+==========================
+news=> select count (*) from valid_visitor_articles;
+  count
+---------
+ 1185706
+(1 row)
+
+news=> select count (*) from log;
+  count
+---------
+ 1677735
+(1 row)
+=================
+select title, count (*) from valid_visitor_articles
+group by (path), order by count(path) desc limit 4;
+=========================================
+
+news=> select title, count (*) from valid_visitor_articles
+group by (title) order by count(path) desc limit 4;
+              title               | count
+----------------------------------+--------
+ Candidate is jerk, alleges rival | 338647
+ Bears love berries, alleges bear | 253801
+ Bad things gone, say good people | 170098
+ Goats eat Google's lawn          |  84906
+(4 rows)
+
+news=> select title, count (*) from valid_visitor_articles
+group by (title) order by count(path) desc limit 3;
+              title               | count
+----------------------------------+--------
+ Candidate is jerk, alleges rival | 338647
+ Bears love berries, alleges bear | 253801
+ Bad things gone, say good people | 170098
+(3 rows)
+==========================
+select authors.name, count(*) as views from articles inner join
+authors on articles.author = authors.id inner join
+log on concat('/article/', articles.slug) = log.path where
+log.status like '%200%' group by authors.name order by views desc
+=========
+
+select authors.name, count(*) as views from articles inner join
+authors on articles.author = authors.id group by authors.name order by views desc
+
+ews=> select authors.name, count(valid_visitor_articles.path)
+news-> from authors, articles , valid_visitor_articles
+news-> where
+news->  articles.author = authors.id and
+news-> articles.author = valid_visitor_articles.author
+news-> group by authors.name order by count(valid_visitor_articles.path) desc;
+          name          |  count
+------------------------+---------
+ Ursula La Multa        | 2030376
+ Rudolf von Treppenwitz |  846914
+ Anonymous Contributor  |  170098
+ Markoff Chaney         |   84557
+(4 rows)
+============================================
