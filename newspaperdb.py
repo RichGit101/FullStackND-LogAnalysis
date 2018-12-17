@@ -7,7 +7,8 @@
 # for all the help
 # Thanks to w3c schools, oracle OTN documents, youtube videos,
 # git hub pages of udacity, ddavignon,aviryan,poko
-# Change log - V1.2 (changes after first # REVIEW:1 )
+# Change log - V1.2(changes after first # REVIEW:1 )
+# Change log - V1.2(changes after first # REVIEW:1.2-out code file exe verified)
 import psycopg2
 DBNAME = "news"
 sql_Pop3Art = """
@@ -72,27 +73,33 @@ class logAnalysisHandler:
             except Exception as expx:
                 print('Connection resource clearing up exception', expx)
 
-        def printRset(self, squery, suffix='views'):
+        def printRset(self, squery, qryty):
             squery = squery.replace('\n', ' ')
             result = self.query_db(squery)
+            lenrs = len(result)
             if (result != 'null'):
-                for i in range(len(result)):
-                    print('\t', i + 1, '.', result[i][0],
-                          '--', result[i][1], suffix)
-            print ''
-            else:
-                print('DB returned null')
+                i = 1
+                for row in result:
+                    ansAdden = row[0]
+                    addTy = type(ansAdden)
+                    ansDeden = row[1]
+                    print i, "-", ansAdden, " ---- ", ansDeden, qryty
+                    i = i+1
+            print ('------------------------------------------------------')
 
 
 if __name__ == '__main__':
     AnalysisOb = logAnalysisHandler()
     print('Welcome to News Analysis, please check read me')
     print('Question 1 - What are the most popular three articles of all time?')
-    AnalysisOb.printRset(sql_Pop3Art)
+    qryty = 'views'
+    AnalysisOb.printRset(sql_Pop3Art, qryty)
     print('Question 2 - Who are the most popular article authors of all time?')
-    AnalysisOb.printRset(sql_ArtAut)
+    qryty = 'views'
+    AnalysisOb.printRset(sql_ArtAut, qryty)
     print('Question 3 - On which days did more'
           'than 1% of requests lead to errors?')
-    AnalysisOb.printRset(sql_PgErr)
+    qryty = 'Error in %'
+    AnalysisOb.printRset(sql_PgErr, qryty)
     AnalysisOb.conClean()
     print('Thank you for reviewing the work, have a good day')
