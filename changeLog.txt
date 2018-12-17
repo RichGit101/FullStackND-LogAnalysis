@@ -1,0 +1,10 @@
+Change log
+V.1.2 After First REVIEW
+Date : 17 Dec 2018 Time 02:40 hrs AM GMT
+1)Shebang added
+2)pycodestyle newspaperdb.py used and all style corrections completed. Verified.
+Test result
+$ pycodestyle newspaperdb.py
+rich (master *) newsdataUS
+3)SQL intendentation suggestion completed
+4)ReadMe.md suggestions compelted

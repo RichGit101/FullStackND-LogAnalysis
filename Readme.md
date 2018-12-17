@@ -1,5 +1,5 @@
 Readme.md
-Project version V1.1
+Project version V1.2 All review 1 suggestions completed
 Date: 16 Dec 2018
 
 ## Acknowledgments
@@ -28,16 +28,36 @@ Executing python py file on command line
 ### Installing
 First Follow Udacity Guide.
 
-A step by step series of examples that tell you how to get a development env running is below
+1) VirtualBox is the software that actually runs the virtual machine. You can download it from virtualbox.org
+2) Vagrant is the software that configures the VM and lets you share files between your host computer and the VM's filesystem. Download it from vagrantup.com.
+3) VM configuration
+you can use Github to fork and clone the [repository] https://github.com/udacity/fullstack-nanodegree-vm.
 
+If you need to bring the virtual machine back online (with vagrant up), do so now. Then log into it with vagrant ssh.
+
+Please read vagrant configuration file. It explains configurations for ssh,
+the way Linux and PostGreSQL is installed.
+
+Navigate to vagrant subdirectory news. We will be working inside this subdirectory.
+
+a-How to create DB
+b-Where to get newsdata.sql with database schema and data
+Location for [data pack]
+https://d17h27t6h515a5.cloudfront.net/topher/2016/August/57b5f748_newsdata/newsdata.zip
+
+c) -Comressed version included
+d )-How to import the scheme and data into database
+To load the data, cd into the vagrant directory and use the command
 psql -d news -f newsdata.sql
 
+e) How to create required view
 psql
 news=> create view valid_visitor_articles as
 news-> select l.path, l.ip,l.status, a.slug, a.author,a.title from log l , articles a
 news-> where l.status like '%200%' and l.path !='/'
 news-> and concat('/article/',a.slug) = l.path ;
 
+Result will be
 
 CREATE VIEW
 news=> \d valid_visitor_articles ;
@@ -51,7 +71,7 @@ View "public.valid_visitor_articles"
  author | integer |
  title  | text    |
 
-
+### Execution of script and verifying sample results
 
 vagrant@vagrant:/vagrant/newsdata$ python newspaperdb.py
 Welcome to News Analysis, please check read me

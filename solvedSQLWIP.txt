@@ -1,0 +1,135 @@
+Question 1
+What are the most popular three articles of all time?
+
+news=> select title, count (*) from valid_visitor_articles
+group by (title) order by count(path) desc limit 3;
+              title               | count
+----------------------------------+--------
+ Candidate is jerk, alleges rival | 338647
+ Bears love berries, alleges bear | 253801
+ Bad things gone, say good people | 170098
+(3 rows)
+========================================================================
+news=> create view valid_visitor_articles as
+news-> select l.path, l.ip,l.status, a.slug, a.author,a.title from log l , articles a
+news-> where l.status like '%200%' and l.path !='/'
+news-> and concat('/article/',a.slug) = l.path ;
+CREATE VIEW
+news=> \d valid_visitor_articles ;
+View "public.valid_visitor_articles"
+ Column |  Type   | Modifiers
+--------+---------+-----------
+ path   | text    |
+ ip     | inet    |
+ status | text    |
+ slug   | text    |
+ author | integer |
+ title  | text    |
+
+==========================================================================
+Who are the most popular article authors of all time?
+
+news=> select authors.name, count(valid_visitor_articles.path)
+news-> from authors, articles , valid_visitor_articles
+news-> where
+news->  articles.author = authors.id and
+news-> articles.author = valid_visitor_articles.author
+news-> group by authors.name order by count(valid_visitor_articles.path) desc;
+          name          |  count
+------------------------+---------
+ Ursula La Multa        | 2030376
+ Rudolf von Treppenwitz |  846914
+ Anonymous Contributor  |  170098
+ Markoff Chaney         |   84557
+(4 rows)
+
+
+news=> select authors.name, count(valid_visitor_articles.path) as views
+news->  from articles
+news->  inner join
+news->  authors on articles.author = authors.id
+news->  inner join
+news->  valid_visitor_articles on concat('/article/', articles.slug) = valid_visitor_articles.path
+news->   group by authors.name
+news->   order by count(valid_visitor_articles.path ) desc;
+          name          | views
+------------------------+--------
+ Ursula La Multa        | 507594
+ Rudolf von Treppenwitz | 423457
+ Anonymous Contributor  | 170098
+ Markoff Chaney         |  84557
+(4 rows)
+
+===========================================================================
+On which days did more than 1% of requests lead to errors?
+
+news=> select * from
+news-> (
+news(> select t_req.day,
+news(>     round(cast((100*usreq.unserved_requests) as numeric) / cast(t_req.tot_requests as numeric), 2)
+news(>     as repErr from
+news(>
+news(>   (select date(time) as day, count(*) as tot_requests from log
+news(>    group by day)
+news(>     as t_req
+news(> inner join
+news(>   (select date(time) as day, count(*) as unserved_requests from log where
+news(>     status like '4%' OR status like '5%' group by day )
+news(>     as usreq
+news(> on t_req.day = usreq.day)
+news-> as toter where repErr >1.0;
+    day     | reperr
+------------+--------
+ 2016-07-17 |   2.26
+(1 row)
+
+
+
+news=> select * from
+(
+select t_req.day,
+    round(cast((100*usreq.unserved_requests) as numeric) / cast(t_req.tot_requests as numeric), 2)
+    as repErr from
+  (select date(time) as day, count(*) as tot_requests from log
+   group by day)
+    as t_req
+inner join
+  (select date(time) as day, count(*) as unserved_requests from log where
+    status like '4%' OR status like '5%' group by day )
+    as usreq
+on t_req.day = usreq.day)
+as toter ;
+    day     | reperr
+------------+--------
+ 2016-07-01 |   0.71
+ 2016-07-02 |   0.70
+ 2016-07-03 |   0.73
+ 2016-07-04 |   0.69
+ 2016-07-05 |   0.77
+ 2016-07-06 |   0.77
+ 2016-07-07 |   0.66
+ 2016-07-08 |   0.76
+ 2016-07-09 |   0.74
+ 2016-07-10 |   0.68
+ 2016-07-11 |   0.74
+ 2016-07-12 |   0.68
+ 2016-07-13 |   0.69
+ 2016-07-14 |   0.69
+ 2016-07-15 |   0.74
+ 2016-07-16 |   0.69
+ 2016-07-17 |   2.26
+ 2016-07-18 |   0.67
+ 2016-07-19 |   0.78
+ 2016-07-20 |   0.70
+ 2016-07-21 |   0.76
+ 2016-07-22 |   0.74
+ 2016-07-23 |   0.68
+ 2016-07-24 |   0.78
+ 2016-07-25 |   0.72
+ 2016-07-26 |   0.73
+ 2016-07-27 |   0.67
+ 2016-07-28 |   0.72
+ 2016-07-29 |   0.70
+ 2016-07-30 |   0.72
+ 2016-07-31 |   0.72
+(31 rows)
